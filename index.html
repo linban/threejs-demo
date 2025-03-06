@@ -6,94 +6,122 @@
     <title>Three.js Model Viewer</title>
 
     <!-- ✅ 引入 Three.js 和 GLTFLoader -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r157/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.157/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
     <script>
-        // 初始化 Three.js 场景
-        let scene = new THREE.Scene();
-        let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        let renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+       // 引入 GLTFLoader 和 TextureLoader
+let loader = new THREE.GLTFLoader();
+let textureLoader = new THREE.TextureLoader();
 
-        // 添加光照
-        let light = new THREE.AmbientLight(0xffffff);
-        scene.add(light);
+// 创建 Three.js 场景
+let scene = new THREE.Scene();
+let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+let renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-        // **正确创建 GLTFLoader**
-        let loader = new THREE.GLTFLoader();
+// 添加环境光
+let light = new THREE.AmbientLight(0xffffff, 1);
+scene.add(light);
 
-        loader.load(
-            'https://raw.githubusercontent.com/linban/threejs-demo/main/porcelain.glb',
-            function (gltf) {
-                let model = gltf.scene;
-                model.scale.set(1, 1, 1); // 调整模型大小
-                model.position.set(0, -1, 0); // 调整位置
-                scene.add(model);
+// 加载 GLTF 模型
+loader.load(
+    'https://raw.githubusercontent.com/linban/threejs-demo/main/jug_01_1k.gltf/jug_01_1k.gltf',
+    function (gltf) {
+        let model = gltf.scene;
+        model.scale.set(1, 1, 1);
+        model.position.set(0, -1, 0);
+        scene.add(model);
 
-                // 绑定手势交互
-                let isDragging = false;
-                let previousX, previousY;
-                let lastScale = 1, startDistance = 0;
+        // 加载 Diffuse 贴图
+let diffTexture = textureLoader.load(
+    'https://raw.githubusercontent.com/linban/threejs-demo/main/jug_01_1k.gltf/textures/jug_01_diff_1k.jpg',
+    undefined,
+    function (error) {
+        console.error("加载 Diffuse 贴图失败:", error);
+    }
+);
 
-                function getDistance(touches) {
-                    let dx = touches[0].clientX - touches[1].clientX;
-                    let dy = touches[0].clientY - touches[1].clientY;
-                    return Math.sqrt(dx * dx + dy * dy);
-                }
+// 加载 Normal 贴图
+let normalTexture = textureLoader.load(
+    'https://raw.githubusercontent.com/linban/threejs-demo/main/jug_01_1k.gltf/textures/jug_01_nor_gl_1k.jpg',
+    undefined,
+    function (error) {
+        console.error("加载 Normal 贴图失败:", error);
+    }
+);
 
-                window.addEventListener("touchstart", (event) => {
-                    if (event.touches.length === 1) {
-                        isDragging = true;
-                        previousX = event.touches[0].clientX;
-                        previousY = event.touches[0].clientY;
-                    } else if (event.touches.length === 2) {
-                        startDistance = getDistance(event.touches);
-                        lastScale = model.scale.x;
-                    }
-                });
 
-                window.addEventListener("touchmove", (event) => {
-                    event.preventDefault();
-                    if (isDragging && event.touches.length === 1) {
-                        let deltaX = event.touches[0].clientX - previousX;
-                        let deltaY = event.touches[0].clientY - previousY;
-                        previousX = event.touches[0].clientX;
-                        previousY = event.touches[0].clientY;
-                        model.rotation.y += deltaX * 0.01;
-                        model.rotation.x += deltaY * 0.01;
-                    }
-
-                    if (event.touches.length === 2) {
-                        let newDistance = getDistance(event.touches);
-                        let scaleFactor = newDistance / startDistance;
-                        let newScale = lastScale * scaleFactor;
-                        model.scale.set(newScale, newScale, newScale);
-                    }
-                });
-
-                window.addEventListener("touchend", () => {
-                    isDragging = false;
-                });
-
-            },
-            undefined,
-            function (error) {
-                console.error("模型加载失败", error);
+        // 遍历模型的所有材质，应用贴图
+        model.traverse((child) => {
+            if (child.isMesh) {
+                child.material.map = diffTexture;
+                child.material.normalMap = normalTexture;
+                child.material.needsUpdate = true;
             }
-        );
+        });
 
-        // 摄像机位置
-        camera.position.z = 5;
+        // 交互手势（旋转 & 缩放）
+        let isDragging = false;
+        let previousX, previousY;
+        let lastScale = 1, startDistance = 0;
 
-        // 动画循环
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
+        function getDistance(touches) {
+            let dx = touches[0].clientX - touches[1].clientX;
+            let dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
         }
-        animate();
+
+        window.addEventListener("touchstart", (event) => {
+            if (event.touches.length === 1) {
+                isDragging = true;
+                previousX = event.touches[0].clientX;
+                previousY = event.touches[0].clientY;
+            } else if (event.touches.length === 2) {
+                startDistance = getDistance(event.touches);
+                lastScale = model.scale.x;
+            }
+        });
+
+        window.addEventListener("touchmove", (event) => {
+            event.preventDefault();
+            if (isDragging && event.touches.length === 1) {
+                let deltaX = event.touches[0].clientX - previousX;
+                let deltaY = event.touches[0].clientY - previousY;
+                previousX = event.touches[0].clientX;
+                previousY = event.touches[0].clientY;
+                model.rotation.y += deltaX * 0.01;
+                model.rotation.x += deltaY * 0.01;
+            }
+
+            if (event.touches.length === 2) {
+                let newDistance = getDistance(event.touches);
+                let scaleFactor = newDistance / startDistance;
+                let newScale = lastScale * scaleFactor;
+                model.scale.set(newScale, newScale, newScale);
+            }
+        });
+
+        window.addEventListener("touchend", () => {
+            isDragging = false;
+        });
+
+    },
+    undefined,
+    function (error) {
+        console.error("模型加载失败", error);
+    }
+);
+
+// 动画循环
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+animate();
+
     </script>
 </body>
 </html>
