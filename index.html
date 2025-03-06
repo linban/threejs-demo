@@ -28,7 +28,7 @@ scene.add(light);
 
 // 加载 GLTF 模型
 loader.load(
-    'https://raw.githubusercontent.com/linban/threejs-demo/main/jug_01_1k.gltf/jug_01_1k.gltf',
+    'https://raw.githubusercontent.com/linban/threejs-demo/main/jug/jug_01_1k.gltf',
     function (gltf) {
         let model = gltf.scene;
         model.scale.set(1, 1, 1);
@@ -37,7 +37,7 @@ loader.load(
 
         // 加载 Diffuse 贴图
 let diffTexture = textureLoader.load(
-    'https://raw.githubusercontent.com/linban/threejs-demo/main/jug_01_1k.gltf/textures/jug_01_diff_1k.jpg',
+    'https://raw.githubusercontent.com/linban/threejs-demo/main/jug/textures/jug_01_diff_1k.jpg',
     undefined,
     function (error) {
         console.error("加载 Diffuse 贴图失败:", error);
@@ -46,7 +46,7 @@ let diffTexture = textureLoader.load(
 
 // 加载 Normal 贴图
 let normalTexture = textureLoader.load(
-    'https://raw.githubusercontent.com/linban/threejs-demo/main/jug_01_1k.gltf/textures/jug_01_nor_gl_1k.jpg',
+    'https://raw.githubusercontent.com/linban/threejs-demo/main/jug/textures/jug_01_nor_gl_1k.jpg',
     undefined,
     function (error) {
         console.error("加载 Normal 贴图失败:", error);
